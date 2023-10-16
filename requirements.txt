@@ -1,0 +1,2 @@
+llama_cpp_python>=0.2.7
+sqlite-utils>=3.35.1

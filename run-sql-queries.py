@@ -10,7 +10,7 @@ import sqlite_utils
 
 DB_PATH = "example.db"
 # MODEL_PATH = "../models/codellama-34b-instruct.Q5_K_M.gguf"
-#MODEL_PATH = "../models/xwin-lm-70b-v0.1.Q5_K_S.gguf"
+# MODEL_PATH = "../models/xwin-lm-70b-v0.1.Q5_K_S.gguf"
 # # Higher quality and still fast enough
 # MODEL_PATH = "../models/xwin-lm-70b-v0.1.Q2_K.gguf"
 # Fast for testing and is very good. It doesn't seem to use group by or more
@@ -24,6 +24,13 @@ MODEL_PATH = "../models/xwin-lm-13b-v0.1.Q6_K.gguf"
 # MODEL_PATH = "../models/llama-2-7b-chat.Q5_K_S.gguf"
 # columns to not ever use or show
 
+# If you have a GPU, tune this so that it's as large as possible w/o
+# getting an out of memory error
+# Model Size    Layers
+# 70b           10
+# 13b           22
+N_GPU_LAYERS=None
+
 ACTIONS = """
 tables: useful for getting the names of tables available. no input.
 schema: useful for looking at the schema of a database. input 1: table name.
@@ -33,7 +40,7 @@ sql-query: useful for analyzing data and getting the top 5 results of a query. i
 
 DATA_HELP = {
     "users": {
-        None: "users are individuals who are seeking work, have worked or are looking to hire people to work on games. sometimes they mention demographic information about themselves in their description.",
+        None: "users are individuals who are seeking work, have worked or are looking to hire people to work on games. sometimes they mention personal details about themselves like how old they are and how many years they've been active.",
         "creatorUserId": "this is the primary key for a user. the experiences table references it",
         "createdUtc": "a ISO8601 datetime string of the user creation date",
         "updatedUtc": "a ISO8601 datetime string of the user's last updated date",
@@ -180,8 +187,8 @@ def sql_query(db, query):
 
 # Utils n stuff
 def load_model(model_path):
-    # for LLaMA2 70B models add kwarg: n_gqa=8
-    return Llama(model_path=model_path, n_ctx=2048, n_gpu_layers=20, n_threads=32)
+    # for LLaMA2 70B models add kwarg: n_gqa=8 (NOTE: not required for GGUF models)
+    return Llama(model_path=model_path, n_ctx=2048, n_gpu_layers=N_GPU_LAYERS, n_threads=os.cpu_count())
 
 
 def execute(llm, question):
@@ -315,7 +322,7 @@ Thought:""".strip()
                 for inp in actionInputs
             ]
             action_fn = action_fns[action]
-            print("** action_fn:", action_fn, "args", args)
+            # print("** action_fn:", action_fn, "args", args)
             observation_text = ""
             try:
                 result = action_fn(db, *args)

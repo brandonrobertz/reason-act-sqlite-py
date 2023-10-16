@@ -143,7 +143,6 @@ def search(db, table_name, query):
 
 # Utils n stuff
 def load_model(model_path):
-    # for LLaMA2 70B models add kwarg: n_gqa=8
     return Llama(model_path=model_path, n_ctx=2048)
 
 
