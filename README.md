@@ -10,8 +10,8 @@ This is a demonstration of how to use [reason and act][react-paper] with [llama.
 The things you'll need to do are:
 
 1. Provide a SQLite database (named `example.db` or you need to change the name in the Python files)
-2. Change the prompts in both Python scripts to be specific to your data. You'll also want to change or remove the context descriptions in `run-sql-queries.py`.
-3. Download a GGUF model for use
+2. Change the prompts in both Python scripts (the `prompt` string inside the `execute` functions) to be specific to your data and problems. You'll also want to date the `DATA_HELP` table and column descriptions in `run-sql-queries.py`.
+3. Download a GGUF model for use, change the `MODEL_PATH` variable in both scripts to point at its location.
 
 There are minimal dependencies for this project, just [sqlite-utils][sqlite-utils] and [llama.cpp-py][llama-cpp-py]. You can install with using pip:
 
