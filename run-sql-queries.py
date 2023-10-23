@@ -9,27 +9,43 @@ import sqlite_utils
 
 
 DB_PATH = "example.db"
-# MODEL_PATH = "../models/codellama-34b-instruct.Q5_K_M.gguf"
-# MODEL_PATH = "../models/xwin-lm-70b-v0.1.Q5_K_S.gguf"
-# # Higher quality and still fast enough
-# MODEL_PATH = "../models/xwin-lm-70b-v0.1.Q2_K.gguf"
+
 # Fast for testing and is very good. It doesn't seem to use group by or more
 # advanced features though
-MODEL_PATH = "../models/xwin-lm-13b-v0.1.Q6_K.gguf"
+# MODEL_PATH = "../models/xwin-lm-13b-v0.1.Q6_K.gguf"
+
+# Mistral is great, esp for a 7B model. I can run this on my 8G 1080 GPU
+# with a N_GPU_LAYERS=-1 setting below
+MODEL_PATH = "../models/mistral-7b-v0.1.Q5_K_M.gguf"
+
+# # Looks promising but I need to convert my prompts to ChatML
+# MODEL_PATH = "../models/dolphin-2.1-mistral-7b.Q5_K_S.gguf"
+
+# # Higher quality much slower
+# MODEL_PATH = "../models/xwin-lm-70b-v0.1.Q2_K.gguf"
+
 # # Trying out SQLcoder, it can do advanced SQL. Result: dumpster fire
 # MODEL_PATH = "../models/sqlcoder.Q5_K_M.gguf"
+
 # # Does weird things with SQL
 # MODEL_PATH = "../models/vicuna-33b.Q6_K.gguf"
+
 # # Fastest, makes lots of mistakes
 # MODEL_PATH = "../models/llama-2-7b-chat.Q5_K_S.gguf"
-# columns to not ever use or show
 
 # If you have a GPU, tune this so that it's as large as possible w/o
-# getting an out of memory error
+# getting an out of memory error. For my 8G vram GPU I can use the
+# following layer counts for the xwin 7b Q5_K_M
+#
 # Model Size    Layers
 # 70b           10
 # 13b           22
-N_GPU_LAYERS=None
+#  7b           -1
+N_GPU_LAYERS=-1
+
+# Larger context sizes will reduce quality, but some models
+# support large contexts better than others.
+CONTEXT_SIZE=2048
 
 ACTIONS = """
 tables: useful for getting the names of tables available. no input.
@@ -39,98 +55,20 @@ sql-query: useful for analyzing data and getting the top 5 results of a query. i
 """
 
 DATA_HELP = {
-    "users": {
-        None: "users are individuals who are seeking work, have worked or are looking to hire people to work on games. sometimes they mention personal details about themselves like how old they are and how many years they've been active.",
-        "creatorUserId": "this is the primary key for a user. the experiences table references it",
-        "createdUtc": "a ISO8601 datetime string of the user creation date",
-        "updatedUtc": "a ISO8601 datetime string of the user's last updated date",
-        "isPublic": "a boolean describing if the user's profile is public. all of these values will be true",
-        "isContactAllowed": "a boolean describing whether or not the user allows people to contact them",
-        "creatorDescription": "a free-text field the user has supplied describing themselves, their interests, work preferences and occasionally age/location",
-        "isOpenToWork": "whether or not the user is actively looking for work",
-        "interestDescription": "a text field describing the users interests",
-        "linkTypes": "an array of platforms/methods the users can be contacted on",
-        "preferredContactLinkType": "the user's preferred platform/method of contact",
-        "socialLinks": "an array of JSON data describing the user's social media accounts",
-        "jobTypes": "the type of jobs and work the user is seeking",
-        "skillTypes": "an array containing skills the user has",
-        "requiresAction": "always set to \"noAction\"",
-    },
-    "experiences": {
-        # table description
-        None: "the experiences table describes previous jobs that users have worked on.",
-        "experienceId": "the primary key for this experience",
-        "creatorUserId": "the primary key from the users table of the user who put this experience on this profile",
-        "createdUtc": "an ISO8601 experience create date",
-        "updatedUtc": "an ISO8601 experience update date",
-        "projectName": "the name of the project the user worked on",
-        "experienceDescription": "a free-text field describing the work the user performed",
-        "jobRole": "a free-text field describing the user's job title on the project",
-        "experienceMedia": "an array of JSON objects describing media displayed on the profile. the names of the media may have descriptive meaning",
-        "experienceLinks": "an array of text containing Markdown links to the game(s) for this experience. the ID in the games URLs may be present in the games table",
-        "teamName": "the name of the team the user worked with, if applicable",
-        "teamId": "the team ID, which may be different from the teamName across experiences",
-        "startedUtc": "an ISO8601 date of when the user began work on the project",
-        "endedUtc": "an ISO8601 date of when the user ended work on the project",
-        "isCurrent": "wheter or not the project is ongoing",
-    },
-    "games": {
-        None: "these are games that are available to play. users mention them in their experience descriptions.",
-        "placeId": "this is the game's primary key. this could show up as an ID in a games URL elsewhere",
-        "name": "the name of the game",
-        "description": "a free-form text description of the game",
-        "sourceName": "the name of the game",
-        "sourceDescription": "a free-form text description of the game",
-        "url": "the URL to the game's page. can be found in experienceLinks or user descriptions. the placeId appears in the URL",
-        "builder": "the name of the user who built the game",
-        "builderId": "the ID of the user who build the game",
-        "hasVerifiedBadge": "whether or not the game has gone through the verification process",
-        "isPlayable": "whether or not the game is playable",
-        "reasonProhibited": "this field, if it's not \"None\", provides the reason why the game isn't currently playable",
-        "universeId": "I'm not sure what this field is. this ID may appear in user or experience descriptions",
-        "universeRootPlaceId": "I'm not sure what this field is. this ID may appear in user or experience descriptions",
-        "price": "the price of this game",
-        "imageToken": "an ID representing the game's image",
-    },
-    "game_stats": {
-        None: "game stats record popularity metrics and game categories. the numbers here are all intended to be short and human-readable, not sortable",
-        "Active": "how many users are active on the game",
-        "Favorites": "how many users have favorited the game",
-        "Visits": "how many users have visited or played the game",
-        "Created": "when the game was created",
-        "Updated": "when the last time the game was updates",
-        "Server Size": "how large the server is",
-        "Genre": "a category the game falls into",
-        "Allowed Gear": "this field is always blank",
-        "placeId": "a primary key of the game. this matches a row in the games table",
-    },
-    "game_passes": {
-        None: "game passes are add-ons that players can purchase that grant additional capabilities in games",
-        "name": "a free-text title of the add-on",
-        "price": "how much this add-on costs",
-        "seller_name": "the name of the game this add-on applies to",
-        "description": "a free-text description of this add-on and what it provides",
-        "down": "how many people purchased this add-on and liked it",
-        "up": "how many people purchased this add-on and disliked it",
-    },
-    "jobs": {
-        None: "these are listings for jobs to work on games. users can apply to them privately. jobs list some details about the work arrangement and requirements",
-        "id": "the primary key of the job listing",
-        "jobPosterId": "the primary key of the user who created the job listing",
-        "title": "the title of the job listing",
-        "description": "a free-text field explaining details about the job and its requirements",
-        "jobType": "the type of job, can be one of: \"Commission\", \"FullTime\", \"PartTime\"",
-        "paymentTypes": "this described the the payment scheme and can be one of: \"Currency\", \"RevenuePercent\", \"Robux\"",
-        "skillTypes": "a JSON array listing the types of skills required for this job",
-        "publishedUtc": "an iso8601 job listing publish date",
-        "expiresUtc": "an iso8601 job listing expiration date",
-        "minAgeRequirement": "the job's minimum age requirements",
-        "isVerifiedRequirement": "this field is always \"false\"",
-        "isVerified": "whether or not the job has been verified, can be \"true\" or \"false\"",
-        "paymentAmount": "a float describing how much the job pays",
-        "paymentAmountType": "a category the paymentAmount falls into",
+    "table name": {
+        None: "enter a table description here",
+        "column name": "a description of the column",
     },
 }
+
+# tables to omit from commands
+IGNORED_TABLES = [
+    "game_stats",
+    "ar_internal_metadata",
+    "schema_migrations",
+    "filing_folders",
+]
+IGNORED_COLUMNS = []
 
 
 def load_db(path):
@@ -152,7 +90,7 @@ def tables(db):
         name
         for name in db.table_names()
         # game stats confuses the model
-        if "_fts" not in name and name != "game_stats"
+        if "_fts" not in name and name not in IGNORED_TABLES
     ]
 
 
@@ -169,15 +107,21 @@ def help(db, *args):
     if len(args) == 2:
         column = args[1]
     if table_name not in DATA_HELP:
-        return f"The table {table_name} isn't in the DB."
+        available_tables = tables(db)
+        return f"The table {table_name} doesn't exist. Valid tables: ```{available_tables}```"
     if column not in DATA_HELP[table_name]:
-        return f"The column {column} isn't in the {table_name} table."
+        available_columns = [
+            c.name
+            for c in db[table_name].columns
+            if c.name not in IGNORED_COLUMNS
+        ]
+        return f"The column {column} isn't in the {table_name} table. Valid columns: ```{available_columns}```"
     return DATA_HELP[table_name][column]
 
 
 def sql_query(db, query):
-    if "select *" in query.lower():
-        return "Error: Select specific columns, not *"
+    # if "select *" in query.lower():
+    #     return "Error: Select specific columns, not *"
     try:
         results = list(db.query(query))
     except sqlite3.OperationalError as e:
@@ -188,7 +132,9 @@ def sql_query(db, query):
 # Utils n stuff
 def load_model(model_path):
     # for LLaMA2 70B models add kwarg: n_gqa=8 (NOTE: not required for GGUF models)
-    return Llama(model_path=model_path, n_ctx=2048, n_gpu_layers=N_GPU_LAYERS, n_threads=os.cpu_count())
+    return Llama(model_path=model_path, n_ctx=CONTEXT_SIZE,
+                 n_gpu_layers=N_GPU_LAYERS, n_threads=os.cpu_count() - 1,
+                 verbose=False)
 
 
 def execute(llm, question):
@@ -253,8 +199,8 @@ Action: tables
 Observation: ```["jobs", "users", "games", "game_passes"]```
 Thought: I should use a SQL group by query to see the top jobs.paymentAmount values.
 Action: sql-query
-Action Input 1: ```select paymentAmount as amt, count(paymentAmount) as n from jobs group by paymentAmount limit 3;```
-Observation: ```[{{"amt": 0.0, "n": 713}}, {{"amt": 1.0, "n": 157}}, {{"amt": 2.0, "n": 22}}]```
+Action Input 1: ```select paymentAmount, count(paymentAmount) as n from jobs group by paymentAmount limit 3;```
+Observation: ```[{{"paymentAmount": 0.0, "n": 713}}, {{"paymentAmount": 1.0, "n": 157}}, {{"paymentAmount": 2.0, "n": 22}}]```
 Thought: This query has given me the count of the top payment amounts in the
 jobs table. I have a final answer.
 Final Answer: The top three payment amounts offered for jobs are 0.0 (713 jobs), 1.0 (157), and 2.0 (22 jobs).
