@@ -2,3 +2,11 @@ __pycache__
 *.pyc
 
 *.db*
+*.json
+*.log
+
+traces/
+experiments/
+data/
+
+.envrc

@@ -1,0 +1,111 @@
+EXPERIMENT_NAME: "EXPERIMENT_SQL"
+# which models to try and their prompt format
+MODELS:
+  - path: ../models/dolphin-2.1-mistral-7b.Q5_K_S.gguf
+    prompt_type: chatml
+    n_gpu_layers: -1
+  - path: ../models/mistral-7b-v0.1.Q5_K_M.gguf
+    prompt_type: raw
+    n_gpu_layers: -1
+  - path: ../models/llama-2-7b.Q5_K_M.gguf
+    prompt_type: raw
+    n_gpu_layers: -1
+  - path: ../models/llama-2-13b.Q5_K_M.gguf
+    prompt_type: raw
+  - path: ../models/xwin-lm-7b-v0.1.Q5_K_M.gguf
+    prompt_type: raw
+    n_gpu_layers: -1
+  - path: ../models/xwin-lm-13b-v0.2.Q5_K_M.gguf
+    prompt_type: raw
+  - path: ../models/ultralm-13b-v2.0.Q5_K_M.gguf
+    prompt_type: raw
+  - path: ../models/sqlcoder.Q5_K_M.gguf
+    prompt_type: raw
+  - path: ../models/llama-2-70b-orca-200k.Q5_K_S.gguf
+    prompt_type: raw
+    timeout: 14400
+# wait this long between runs, let the GPU cool down
+COOLDOWN: 30
+# 120 mins max runtime (should be PLENTY)
+TIMEOUT: 7200
+# On a local 70B model we might want more time, though
+# "TIMEOUT": 14400
+# how many times to try each question
+N_TRIES: 10
+QA: [{
+    "question": "first question",
+    "correct_answer": "The correct answer (approximately)",
+    "correct_keywords": [
+      "A Full phrase to match",
+      # this will match with and without the dollar signs and commas
+      "$10,000,000",
+    ]
+}]
+# some prompts that should be matched based on similarity to the input question and injected
+AVAILABLE_INJECT_PROMPTS:
+  - question: An example question to match
+    prompt:
+      - role: user
+        content: |-
+          Question: An example question to match
+
+      - role: assistant
+        content: |-
+          Thought: I should begin with ...
+          Action: tables
+
+      - role: user
+        content: |-
+          Observation: etc etc continue the trace yourself
+
+PROMPT_DATA:
+  - role: system
+    content: |-
+      Answer the following questions as best you can. You have access to the following tools:
+
+      action1: description. input 1: arg desc. etc ...
+
+      Use the following format:
+
+      Question: the input question you must answer
+      Thought: you should always think about what to do
+      Action: the action to take, should be one of: tables, schema, help, sql-query
+      Action Input 1: the first input to the action.
+      Observation: the result of the action
+      ... (this Thought/Action/Action Input/Observation can repeat N times)
+      Thought: I now know the final answer
+      Final Answer: the final answer to the original input question
+
+  - role: user
+    content: |-
+      Question: What information do I have about users?
+
+  - role: assistant
+    content: |-
+      Thought: continue the trace ...
+      Action: ...
+
+  - role: user
+    content: |-
+      Observation: ```...```
+
+  - role: assistant
+    content: |-
+      Thought: ...
+      Final Answer: ... example final answer ...
+
+  - role: user
+    # this marks the point where if we're going to inject examples we'll do it before here
+    # and not use the prompt from here until the second before the end
+    inject_before: True
+    content: |-
+      Question: ...
+
+  - role: assistant
+    content: |-
+      Thought: ...
+      Final Answer: ...
+
+  - role: user
+    content: |-
+      Question: {question}
