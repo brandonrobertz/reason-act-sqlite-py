@@ -24,6 +24,11 @@ MODELS:
   - path: ../models/llama-2-70b-orca-200k.Q5_K_S.gguf
     prompt_type: raw
     timeout: 14400
+# # model temperature setting
+# temp: 0.0
+# # model Top-P nucleus sampling threshold not
+# # used if temp is 0
+# top_p: 0.1
 # wait this long between runs, let the GPU cool down
 COOLDOWN: 30
 # 120 mins max runtime (should be PLENTY)

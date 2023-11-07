@@ -22,21 +22,30 @@ MAX_TOKENS=400
 
 # Utils n stuff
 def load_model(model_path, n_gpu_layers=0, n_threads=os.cpu_count() - 1,
-               n_ctx=CONTEXT_SIZE):
+               n_ctx=CONTEXT_SIZE, temp=None, top_p=None):
     # for LLaMA2 70B models add kwarg: n_gqa=8 (NOTE: not required for GGUF models)
     print("Loading model", model_path)
     print("CTX:", n_ctx, "GPU layers:", n_gpu_layers, "CPU threads:", n_threads)
-    llm = Llama(model_path=model_path,
-                n_ctx=n_ctx,
-                n_gpu_layers=n_gpu_layers,
-                n_threads=n_threads,
-                verbose=False)
+    print("Temperature:", temp, "Top-p Sampling:", top_p)
+    kwargs = dict(
+        model_path=model_path,
+        n_ctx=n_ctx,
+        n_gpu_layers=n_gpu_layers,
+        n_threads=n_threads,
+        verbose=False
+    )
+    if temp is not None:
+        kwargs["temp"] = temp
+    if top_p is not None:
+        kwargs["top_p"] = top_p
+    llm = Llama(**kwargs)
     return llm
 
 
 def execute(model_path, outfile=None, debug=True, return_dict=None,
-            prompt=None, n_gpu_layers=0):
-    llm = load_model(model_path, n_gpu_layers=n_gpu_layers)
+            prompt=None, n_gpu_layers=0, temp=None, top_p=None):
+    llm = load_model(model_path, n_gpu_layers=n_gpu_layers, temp=temp,
+                     top_p=top_p)
     db = load_db(DB_PATH)
     action_fns = {
         "tables":  tables,

@@ -7,10 +7,11 @@ import re
 import sys
 import time
 
-from gensim.models import FastText
-from gensim.models.fasttext import load_facebook_model
 import numpy as np
 import pymeteor.pymeteor as pymeteor
+from nltk.corpus import stopwords
+from nltk import download
+import spacy
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -22,9 +23,9 @@ from run_sql_queries_nonprofits_gpt4 import execute as execute_openai
 
 
 USE_EXAMPLE_INJECTION = False
-fasttext = None
-if USE_EXAMPLE_INJECTION:
-    fasttext = load_facebook_model("./data/cc.en.bin", encoding='utf-8')
+# HACK: globals
+nlp = None
+stop_words = None
 
 
 def load_yml_file(filename):
@@ -32,20 +33,19 @@ def load_yml_file(filename):
         return load(f, Loader=Loader)
 
 
-def phrase2vec(model, phrase):
-    vectors = []
-    for token in phrase.split():
-        vectors.append(model.wv[token])
-    return np.array(vectors).mean()
+def preprocess(sentence):
+    return [w for w in sentence.lower().split() if w not in stop_words]
 
 
-def best_matching_injectable(model, question, injectables):
-    question_vec = phrase2vec(question)
-    # best score, matching prompt
+def best_matching_injectable(question, injectables):
     best = [0.0, injectables[0]["prompt"]]
+    q1 = " ".join(preprocess(question))
+    question_vec = nlp(q1)
     for injectable in injectables:
-        prompt_question_vec = phrase2vec(injectable["question"])
-        sim = model.similarity(question_vec, prompt_question_vec)
+        q2 = " ".join(preprocess(injectable["question"]))
+        inj_question_vec = nlp(q2)
+        sim = inj_question_vec.similarity(question_vec)
+        print(sim, "Q:", q1, "Q2:", q2)
         if sim > best[0]:
             best = [sim, injectable["prompt"]]
     return best[1]
@@ -58,10 +58,10 @@ def maybe_inject_prompts(prompt_data, question, injectables=None):
     if not injectables:
         return prompt_data
 
-    if not fasttext:
+    if not nlp:
         return prompt_data
 
-    similar_injectable = best_matching_injectable(fasttext, question, injectables)
+    similar_injectable = best_matching_injectable(question, injectables)
 
     # first: truncate the examples by looking for the inject_before: True
     # on the prompt items
@@ -204,6 +204,7 @@ def save_experiment_data(experiment_output, experiment_data):
 def run_experiment(
     model_path, prompt_data, qa, experiment_output,
     cooldown=None, n_tries=10, n_gpu_layers=0,
+    temp=None, top_p=None,
     injectables=None, timeout=30*60
 ):
     experiment_data = {
@@ -248,7 +249,8 @@ def run_experiment(
                     model_path, outfile=tracefile,
                     debug=False, prompt=prompt,
                     n_gpu_layers=n_gpu_layers,
-                    timeout=timeout,
+                    timeout=timeout, temp=temp,
+                    top_p=top_p
                 )
             except Exception as e:
                 print(f"ERROR: {e}")
@@ -296,10 +298,16 @@ if __name__ == "__main__":
 
     today=datetime.now().strftime("%Y-%m-%d")
     exp_name = experiment_plan["EXPERIMENT_NAME"]
-    timeout = experiment_plan.get("EXPERIMENT_NAME")
+    timeout = experiment_plan.get("TIMEOUT")
 
     prompt_data = experiment_plan["PROMPT_DATA"]
     injectables = experiment_plan.get("AVAILABLE_INJECT_PROMPTS")
+
+    if USE_EXAMPLE_INJECTION:
+        print("Loading NLP models")
+        nlp = spacy.load("en_core_web_lg")
+        download('stopwords')  # Download stopwords list.
+        stop_words = stopwords.words('english')
 
     for model_data in experiment_plan["MODELS"]:
         experiment_model = model_data["path"]
@@ -313,6 +321,8 @@ if __name__ == "__main__":
             cooldown=model_data.get("cooldown") or experiment_plan.get("COOLDOWN"),
             n_tries=experiment_plan["N_TRIES"],
             n_gpu_layers=model_data.get("n_gpu_layers", 0),
+            temp=experiment_plan.get("temp"),
+            top_p=experiment_plan.get("top_p"),
             injectables=injectables,
             timeout=model_data.get("timeout", timeout)
         )
