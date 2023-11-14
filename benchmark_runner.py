@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from datetime import datetime 
+from datetime import datetime
 import multiprocessing
 import json
 import os
@@ -18,8 +18,9 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+from metrics import get_keyword_matches
 from llm_sql_queries import execute
-from run_sql_queries_nonprofits_gpt4 import execute as execute_openai
+from llm_openai_sql_queries import execute as execute_openai
 
 
 USE_EXAMPLE_INJECTION = False
@@ -127,33 +128,6 @@ def prompt_data_to_chatml(prompt_data, question, injectables=None):
             prompt_raw += "Thought: "
 
     return prompt_raw.strip()
-
-
-STATES = load_yml_file("states.yml")
-
-
-def get_keyword_matches(result, correct_keywords):
-    matches = 0
-    if not result:
-        return matches
-    for keyword in correct_keywords:
-        # dollar amounts look for the full int sans symbols
-        if isinstance(keyword, (int, float)) or keyword.startswith("$"):
-            if re.match(fr"[\s]{keyword}[\.\s$]", re.sub(r"[$,]+", "", result)):
-                matches += 1
-        # if we have a state, check for case-sensitive abbrev + full name
-        elif keyword in STATES:
-            if f" {keyword}" in result:
-                matches += 1
-            elif STATES[keyword] in result:
-                matches += 1
-        # case insensitive match on phrases
-        elif " " in keyword and result.lower() in keyword.lower():
-            matches += 1
-        # otherwise exact string match
-        elif keyword in result:
-            matches += 1
-    return matches
 
 
 def get_model_name(model_file):
@@ -279,7 +253,8 @@ def run_experiment(
 
         print("Appending experiment")
         experiment_data["question_results"].append(q_result)
-        print(len(experiment_data["question_results"]), "experiments have been completed")
+        print(len(experiment_data["question_results"]),
+              "experiments have been completed")
 
         save_experiment_data(experiment_output, experiment_data)
 
@@ -294,6 +269,7 @@ if __name__ == "__main__":
         print("Where experiment_plan_file points to a yaml file describing the experiments to be performed.")
         sys.exit(1)
 
+    print("Loading experiment plan file", experiment_plan_file)
     experiment_plan = load_yml_file(experiment_plan_file)
 
     today=datetime.now().strftime("%Y-%m-%d")
@@ -317,7 +293,10 @@ if __name__ == "__main__":
         experiment_output = f"./experiments/{exp_name}_{today}_{model_name}.json"
 
         experiment_data = run_experiment(
-            experiment_model, prompt_data, experiment_plan["QA"], experiment_output,
+            experiment_model,
+            prompt_data,
+            experiment_plan["QA"],
+            experiment_output,
             cooldown=model_data.get("cooldown") or experiment_plan.get("COOLDOWN"),
             n_tries=experiment_plan["N_TRIES"],
             n_gpu_layers=model_data.get("n_gpu_layers", 0),

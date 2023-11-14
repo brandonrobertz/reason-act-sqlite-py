@@ -4,7 +4,10 @@ import re
 import sys
 import sqlite3
 
-from llama_cpp import Llama
+try:
+    from llama_cpp import Llama
+except ModuleNotFoundError:
+    print("llama_cpp not installed, continuing without")
 
 from actions import (
     DB_PATH, load_db,

@@ -4,7 +4,6 @@ import re
 import sys
 import sqlite3
 
-from llama_cpp import Llama
 import sqlite_utils
 
 
