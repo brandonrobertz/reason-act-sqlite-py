@@ -68,7 +68,8 @@ def maybe_inject_prompts(prompt_data, question, injectables=None):
     # on the prompt items
     truncate_at = None
     for i, item in enumerate(prompt_data):
-        if item.get("inject_before"):
+        should_inject = item.pop("inject_before", False)
+        if should_inject:
             truncate_at = i
             break
 
@@ -149,8 +150,8 @@ def run_llm(*args, timeout=30*60, **kwargs):
     kwargs["return_dict"] = return_dict
 
     execute_fn = execute
-    # if args[0].startswith("openai:"):
-    #     execute_fn = execute_openai
+    if args[0].startswith("openai:"):
+        execute_fn = execute_openai
 
     p = multiprocessing.Process(
         target=execute_fn, name="LLM",

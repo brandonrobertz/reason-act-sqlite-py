@@ -26,8 +26,9 @@ def execute(model_path, outfile=None, debug=True, return_dict=None,
             prompt=None, n_gpu_layers=0, temp=None, top_p=None):
     assert prompt, "You didn't supply a prompt"
     db = load_db(DB_PATH)
-    openai.organization = os.getenv("OPENAI_ORG_ID")
-    openai.api_key = os.getenv("OPENAI_API_KEY")
+    openai.organization = os.environ["OPENAI_ORG_ID"]
+    openai.api_key = os.environ["OPENAI_API_KEY"]
+    assert openai.organization and openai.api_key, "No OpenAI credentials"
     action_fns = {
         "tables":  tables,
         # "columns": columns,
@@ -45,7 +46,6 @@ def execute(model_path, outfile=None, debug=True, return_dict=None,
         model_name = model_path.split(":", 1)[1]
         print("Running OpenAI model", model_name)
         print("Prompt", prompt)
-        sys.exit(1)
         model_kwargs = dict(
             # model="gpt-4",
             model=model_name,
@@ -60,6 +60,7 @@ def execute(model_path, outfile=None, debug=True, return_dict=None,
             stream=True,
             messages=prompt,
         )
+
         # Open AI recommends not using BOTH temperature and top-p
         if temp is not None:
             model_kwargs["temperature"] = temp
@@ -127,7 +128,6 @@ def execute(model_path, outfile=None, debug=True, return_dict=None,
         prompt.append({"role": "assistant", "content": response})
 
         if debug:
-            # print(f"{prompt}\n")
             print(response)
 
         with open("debug-openai.log", "a") as f:
@@ -135,6 +135,7 @@ def execute(model_path, outfile=None, debug=True, return_dict=None,
             f.write('\n')
 
         if outfile:
+            print("Writing to tracefile", outfile)
             with open(outfile, "w") as f:
                 f.write(json.dumps(prompt, indent=2))
 
@@ -207,18 +208,3 @@ def execute(model_path, outfile=None, debug=True, return_dict=None,
         return_dict["trace"] = prompt
 
     return None, prompt
-
-
-if __name__ == "__main__":
-    question = sys.argv[1]
-    outfile = None
-    try:
-        outfile = sys.argv[2]
-    except IndexError:
-        pass
-    answer, trace = execute("openai:gpt-4", question, outfile=outfile)
-    print("Full trace")
-    print("="*72)
-    print(trace)
-    print("-"*72)
-    print("Final Answer:", answer)

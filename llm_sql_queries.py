@@ -104,6 +104,7 @@ def execute(model_path, outfile=None, debug=True, return_dict=None,
             print(response)
 
         if outfile:
+            print("Writing to tracefile", outfile)
             with open(outfile, "w") as f:
                 f.write(prompt)
 
