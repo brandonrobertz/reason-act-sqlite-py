@@ -7,8 +7,11 @@ __pycache__
 *.log
 
 traces/
+traces.*/
 experiments/
 data/
 results/
+
+*-benchmark.yml
 
 .envrc
