@@ -11,7 +11,7 @@ The things you'll need to do are:
 
 1. Provide a SQLite database (named `example.db` or you need to change the name in the Python files)
 2. Change the prompts in both Python scripts (the `prompt` string inside the `execute` functions) to be specific to your data and problems. You'll also want to date the `DATA_HELP` table and column descriptions in `run-sql-queries.py`.
-3. Download a GGUF model for use, change the `MODEL_PATH` variable in both scripts to point at its location.
+3. Download a GGUF model for use. The default is to look for [dolphin-2.2.1-mistral-7b.Q5_K_M.gguf][dolphin-2.2.1-mistral-7b] in the current dir. If you want to use a different model, edit the script you're running.
 
 There are minimal dependencies for this project, just [sqlite-utils][sqlite-utils] and [llama.cpp-py][llama-cpp-py]. You can install with using pip:
 
@@ -23,7 +23,7 @@ Once you have everything installed and configured, you can kick off a session by
 
 ```
 python run_interface.py "What kind of data do I have available?"
-python run_sql_queries.py "What are some interesting records in the database?"
+python llm_sql_queries.py "What are some interesting records in the database?"
 ```
 
 The model output will be printed to stdout.
@@ -45,3 +45,6 @@ The model output will be printed to stdout.
 
 [sqlite-utils]: https://github.com/simonw/sqlite-utils
     "Python CLI utility and library for manipulating SQLite databases"
+
+[dolphin-2.2.1-mistral-7b]: https://huggingface.co/TheBloke/dolphin-2.2.1-mistral-7B-GGUF/tree/main
+    "Dolphin 2.2.1 Mistral 7B GGUF on HuggingFace"
