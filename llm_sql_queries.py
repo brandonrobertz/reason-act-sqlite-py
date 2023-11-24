@@ -191,3 +191,20 @@ Thought: """
         return_dict["final_answer"] = None
         return_dict["trace"] = prompt
     return None, prompt
+
+
+if __name__ == "__main__":
+    question = sys.argv[1]
+    model_path = "dolphin-2.2.1-mistral-7b.Q5_K_M.gguf"
+    with open("example-prompt.txt", "r") as f:
+        prompt = f.read().format(question=question.strip())
+        answer, trace = execute(
+            model_path, outfile=None,
+            debug=False, prompt=prompt,
+            n_gpu_layers=0,
+            temp=0,
+            top_p=None
+        )
+
+    print("Trace", trace)
+    print("Final Answer:", answer)

@@ -1,0 +1,75 @@
+Answer the following questions as best you can. You have access to the following tools:
+
+tables: Useful for getting the names of tables available. No input.
+schema: Useful for looking at the schema (columns and data types) of a table. Input 1: table name.
+help: Returns helpful information describing a table or a table's column. Useful for understanding things like the relationship between tables and how to interpret columns. Input 1: table name. (optional) Input 2: column name.
+sql-query: Useful for analyzing data and getting the top 5 results of a query. Input 1: a valid SQLite3 SQL query.
+
+Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of: tables, schema, help, sql-query
+Action Input 1: the first input to the action.
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+# Here's an example:
+
+Question: What information do I have about users?
+Thought: I should check to see if I have any users tables.
+Action: tables
+Observation: ```["jobs", "users", "games", "game_passes"]```
+Thought: I should inspect the columns on the users table.
+Action: schema
+Action Input 1: ```users```
+Observation: ```CREATE TABLE [users] ( [creatorUserId] INTEGER PRIMARY KEY, [isContactAllowed] INTEGER, [creatorDescription] TEXT, [isOpenToWork] INTEGER, [interestDescription] TEXT, [linkTypes] TEXT, [preferredContactLinkType] TEXT, [socialLinks] TEXT, [jobTypes] TEXT, [skillTypes] TEXT, [requiresAction] TEXT )```
+Thought: I should see what ways the users table can be helpful by checking the help.
+Action: help
+Action Input 1: ```users```
+Observation: users are individuals who are seeking work, have worked or are looking to hire people to work on games. sometimes they mention personal details about themselves in their description.
+Thought: I have all of the information I need.
+Final Answer: I have information about user skills, job types, and whether or not they're actively open to work for users. For some users, we have personal information in their profiles.
+
+# Here's another example:
+
+Question: How many jobs have been offered?
+Thought: I should look at which tables I have available.
+Action: tables
+Observation: ```["jobs", "users", "games", "game_passes"]```
+Thought: I should count the rows of the jobs table using SQLite SQL.
+Action: sql-query
+Action Input 1: ```select count(id) from jobs;```
+Observation: ```[{{'count(id)': 6753}}]```
+Thought: This query has given me the count of jobs in the table. I have a final answer.
+Final Answer: There have been 6,753 total jobs offered according to the database.
+
+# You can run any SQLite query to answer aggregate questions:
+
+Question: What are the most common payment amounts that have been offered for jobs?
+Thought: I should look at which tables I have available.
+Action: tables
+Observation: ```["jobs", "users", "games", "game_passes"]```
+Thought: I should use a SQL group by query to see the top jobs.paymentAmount values.
+Action: sql-query
+Action Input 1: ```select paymentAmount, count(paymentAmount) as n from jobs group by paymentAmount limit 3;```
+Observation: ```[{{"paymentAmount": 0.0, "n": 713}}, {{"paymentAmount": 1.0, "n": 157}}, {{"paymentAmount": 2.0, "n": 22}}]```
+Thought: This query has given me the count of the top payment amounts in the
+jobs table. I have a final answer.
+Final Answer: The top three payment amounts offered for jobs are 0.0 (713 jobs), 1.0 (157), and 2.0 (22 jobs).
+
+# You can get helpful information about table and columns by using the help action:
+
+Question: What kind of information shows up in the user description?
+Thought: I should read the help for the description column in the users table.
+Action: help
+Action Input 1: ```users```
+Action Input 2: ```creatorDescription```
+Observation: The users table's creatorDescription column is a free-text field the user has supplied, describing themselves, their interests and work preferences.
+Thought: I have some information about what appears in user descriptions.
+Final Answer: Users sometimes put their interests, work preferences and demographic information in their description.
+
+Question: {question}
+Thought:

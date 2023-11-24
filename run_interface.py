@@ -9,12 +9,7 @@ import sqlite_utils
 
 
 DB_PATH = "example.db"
-# # Very good but slower
-# MODEL_PATH = "../models/vicuna-33b.Q6_K.gguf"
-# This one is faster for testing, it's pretty good too
-MODEL_PATH = "../models/xwin-lm-13b-v0.1.Q6_K.gguf"
-# # Fastest, makes lots of mistakes
-# MODEL_PATH = "../models/llama-2-7b-chat.Q5_K_S.gguf"
+MODEL_PATH = "dolphin-2.2.1-mistral-7b.Q5_K_M.gguf"
 # columns to not ever use or show
 IGNORED_COLUMNS = ["rowid", "created_at", "_meta_score"]
 TABLE_FTS = {
