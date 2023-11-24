@@ -64,7 +64,8 @@ def get_keyword_matches(result, correct_keywords, return_texts=False):
             return matches, match_texts
         return matches
     for keyword in correct_keywords:
-        keyword_re = rf"[(\b\s]{keyword}[,\s\b]"
+        keyword_nocomma = re.sub(r"[$,]+", "", str(keyword))
+        keyword_re = rf"[(\b\s]({keyword_nocomma})(?:[).,\s\b]|$)"
         # dollar amounts look for the full int sans symbols
         if isinstance(keyword, (int, float)) or str(keyword).startswith("$"):
             res_nocomma = re.sub(r"[$,]+", "", result)

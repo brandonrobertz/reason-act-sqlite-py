@@ -38,14 +38,14 @@ def execute(model_path, outfile=None, debug=True, return_dict=None,
     }
 
     if debug:
-        print(prompt)
+        print(json.dumps(prompt, indent=2))
 
     total_tokens = 0
     done = False
     while not done:
         model_name = model_path.split(":", 1)[1]
-        print("Running OpenAI model", model_name)
-        print("Prompt", prompt)
+        print("Running OpenAI model:", model_name)
+        print("Last prompt line:", json.dumps(prompt[-1], indent=2))
         model_kwargs = dict(
             # model="gpt-4",
             model=model_name,
@@ -101,7 +101,7 @@ def execute(model_path, outfile=None, debug=True, return_dict=None,
             if i > MAX_TOKENS:
                 break
             choice = item['choices'][0]
-            print(i, json.dumps(choice), end="\t\t\t\t\t\r")
+            print(i, json.dumps(choice), end="          \r")
 
             # if it gives a non-assistant role, end
             role = choice["delta"].get("role")
@@ -160,10 +160,18 @@ def execute(model_path, outfile=None, debug=True, return_dict=None,
             })
 
         elif action:
+            print("Action in response", response)
             # NOTE: we could change 1 for the number of args of selected action
             actionInputs = re.findall(
                 r'Action Input (\d): ```([^`]+)```', response, re.M|re.S
             )
+            # try and recover actions without backticks
+            if not actionInputs:
+                actionInputs = re.findall(
+                    r'Action Input (\d): ([^`]+)', response, re.M|re.S
+                )
+            print("actionInputs", actionInputs)
+
             args = [
                 inp[1]
                 for inp in actionInputs

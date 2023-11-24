@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from datetime import datetime
+import copy
 import multiprocessing
 import json
 import os
@@ -23,7 +24,7 @@ from llm_sql_queries import execute
 from llm_openai_sql_queries import execute as execute_openai
 
 
-USE_EXAMPLE_INJECTION = False
+USE_EXAMPLE_INJECTION = True
 # HACK: globals
 nlp = None
 stop_words = None
@@ -53,40 +54,52 @@ def best_matching_injectable(question, injectables):
 
 
 def maybe_inject_prompts(prompt_data, question, injectables=None):
+    new_prompt_data = copy.deepcopy(prompt_data)
     if not USE_EXAMPLE_INJECTION:
-        return prompt_data
+        return new_prompt_data
 
     if not injectables:
-        return prompt_data
+        return new_prompt_data
 
     if not nlp:
-        return prompt_data
+        return new_prompt_data
 
     similar_injectable = best_matching_injectable(question, injectables)
 
     # first: truncate the examples by looking for the inject_before: True
     # on the prompt items
     truncate_at = None
-    for i, item in enumerate(prompt_data):
-        should_inject = item.pop("inject_before", False)
-        if should_inject:
+    for i, item in enumerate(new_prompt_data):
+        if item.get("inject_before"):
             truncate_at = i
             break
 
     if truncate_at is None:
-        return prompt_data
+        return new_prompt_data
 
     # This also cuts off the final part, we need to fix that
-    truncated_prompt_data = prompt_data[:i] + similar_injectable
+    truncated_prompt_data = new_prompt_data[:i] + similar_injectable
     # append the question now
-    truncated_prompt_data.append(prompt_data[-1])
+    truncated_prompt_data.append(new_prompt_data[-1])
     return truncated_prompt_data
 
 
 def prompt_data_to_openai(prompt_data, question, injectables=None):
-    prompt_completed = maybe_inject_prompts(prompt_data, question, injectables=injectables)
-    prompt_completed[-1]["content"] = prompt_completed[-1]["content"].format(question=question)
-    return prompt_completed
+    prompt_completed = maybe_inject_prompts(
+        prompt_data, question, injectables=injectables
+    )
+    prompt_completed[-1]["content"] = prompt_completed[-1]["content"].format(
+        question=question
+    )
+    print("Final instruction in prepared prompt:", prompt_completed[-1])
+    # clean up the prompt because openAI explodes if any unexpected keys
+    # are supplied
+    openai_allowed_keys = ["role", "content"]
+    finalized_prompt = [
+        {k: v for k, v in item.items() if k in openai_allowed_keys}
+        for item in prompt_completed
+    ]
+    return finalized_prompt
 
 
 def prompt_data_to_raw(prompt_data, question, injectables=None):
@@ -189,7 +202,7 @@ def run_experiment(
         "prompt": prompt_data,
     }
     for q_data in qa:
-        q_result = q_data.copy()
+        q_result = copy.deepcopy(q_data)
         print()
         print("="*72)
         print("Beginning with question:", q_result["question"])
@@ -199,11 +212,11 @@ def run_experiment(
         q_result["keyword_matches"] = []
         q_result["answers"] = []
         for i in range(n_tries):
-            print()
             print("-" * 72)
             print(f"Attempt: {i}")
 
             question = q_result["question"]
+            print("Preparing prompt with Question:", question)
             prompt = None
             if experiment_prompt == "raw":
                 prompt = prompt_data_to_raw(prompt_data, question, injectables=injectables)
@@ -216,7 +229,6 @@ def run_experiment(
             correct_keywords = q_result["correct_keywords"]
 
             print("Writing to:", tracefile)
-            print("Question:", question)
             answer = None
             error = None
             try:
@@ -283,6 +295,7 @@ if __name__ == "__main__":
     if USE_EXAMPLE_INJECTION:
         print("Loading NLP models")
         nlp = spacy.load("en_core_web_lg")
+        print("Loading stopwords")
         download('stopwords')  # Download stopwords list.
         stop_words = stopwords.words('english')
 

@@ -84,10 +84,10 @@ if __name__ == "__main__":
             print("=" * 72)
             print("Experiment:", experiment_name, "Model name:", model_name)
 
+            # TODO: replace these with cli arg filters
             if "ROBLOX" not in experiment_name or "ROBLOX" not in filename:
                 continue
-
-            # if "dolphin" not in model_name:
+            # if "OPENAI" not in experiment_name:
             #     continue
 
             for q_n, result in enumerate(experiment["question_results"]):

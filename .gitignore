@@ -1,3 +1,4 @@
+.DS_Store
 __pycache__
 *.pyc
 
@@ -8,5 +9,6 @@ __pycache__
 traces/
 experiments/
 data/
+results/
 
 .envrc
