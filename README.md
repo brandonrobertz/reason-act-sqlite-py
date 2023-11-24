@@ -22,12 +22,11 @@ pip install -r requirements.txt
 Once you have everything installed and configured, you can kick off a session by coming up with a question and asking it on the command line:
 
 ```
-python run-interface.py "What kind of data do I have available?"
-python run-sql-queries.py "What are some interesting records in the database?"
+python run_interface.py "What kind of data do I have available?"
+python run_sql_queries.py "What are some interesting records in the database?"
 ```
 
 The model output will be printed to stdout.
-
 
 [react-paper]: https://blog.research.google/2022/11/react-synergizing-reasoning-and-acting.html?m=1
     "ReAct: Synergizing Reasoning and Acting in Language Models"
