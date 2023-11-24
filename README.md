@@ -13,7 +13,7 @@ The things you'll need to do are:
 2. Change the prompts in both Python scripts (the `prompt` string inside the `execute` functions) to be specific to your data and problems. You'll also want to date the `DATA_HELP` table and column descriptions in `run-sql-queries.py`.
 3. Download a GGUF model for use. The default is to look for [dolphin-2.2.1-mistral-7b.Q5_K_M.gguf][dolphin-2.2.1-mistral-7b] in the current dir. If you want to use a different model, edit the script you're running.
 
-There are minimal dependencies for this project, just [sqlite-utils][sqlite-utils] and [llama.cpp-py][llama-cpp-py]. You can install with using pip:
+There are some dependencies for this project that you need, first. You can install with using pip:
 
 ```
 pip install -r requirements.txt
